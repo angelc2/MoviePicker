@@ -791,20 +791,199 @@ input.r::-moz-range-thumb{
   min-height:46px;
 }
 @media(max-width:560px){
+  body{
+    padding:14px 10px 30px;
+  }
+  .topbar{
+    margin-bottom:12px;
+    gap:10px;
+  }
+  .brand-mark{
+    width:36px;
+    height:36px;
+    border-radius:12px;
+  }
+  .brand-text strong{
+    font-size:13px;
+  }
+  .brand-text span{
+    font-size:10px;
+  }
+  .status-pill,
+  .summary-chip{
+    min-height:38px;
+    padding:8px 12px;
+    font-size:11px;
+  }
+  .panel-body{
+    padding:18px;
+  }
+  .hero-kicker{
+    margin-bottom:14px;
+    padding:6px 10px;
+    font-size:10px;
+  }
+  .hero h1,
+  .section-head h1,
+  .list-meta strong,
+  .pick-title{
+    font-size:clamp(2.1rem,9vw,2.9rem);
+  }
+  .hero p,
+  .list-meta span,
+  .section-head span{
+    font-size:13px;
+    line-height:1.55;
+  }
+  .hero-grid{
+    gap:10px;
+    margin-top:16px;
+  }
+  .hero-stat,
+  .helper-card{
+    padding:14px;
+    border-radius:18px;
+  }
+  .hero-stat strong{
+    font-size:13px;
+  }
+  .hero-stat span,
+  .helper-card p,
+  .api-note{
+    font-size:12px;
+    line-height:1.55;
+  }
+  .dropzone{
+    min-height:214px;
+    padding:22px 16px;
+    border-radius:22px;
+  }
+  .dz-icon{
+    width:50px;
+    height:50px;
+    margin-bottom:12px;
+  }
+  .dz-lbl{
+    font-size:21px;
+  }
+  .dz-sub{
+    font-size:13px;
+    line-height:1.55;
+  }
+  .dz-btn,
+  .btn-gold,
+  .btn-ghost,
+  .btn-sp,
+  .btn-sg,
+  .btn-skip{
+    min-height:42px;
+    padding:11px 14px;
+    font-size:12px;
+  }
+  .filters-grid{
+    gap:12px;
+  }
+  .fb{
+    padding:16px;
+    border-radius:20px;
+  }
+  .fb-lbl{
+    font-size:11px;
+    margin-bottom:6px;
+  }
+  .fb h3{
+    font-size:18px;
+  }
+  .sl-outer{
+    padding-top:32px;
+    margin-top:8px;
+  }
+  .slv{
+    font-size:15px;
+  }
+  .sl-ends{
+    margin-top:8px;
+    font-size:10px;
+  }
+  input.r,
+  .dual-track{
+    height:7px;
+  }
+  input.r::-webkit-slider-thumb{
+    width:20px;
+    height:20px;
+  }
+  input.r::-moz-range-thumb{
+    width:20px;
+    height:20px;
+  }
+  .lang-row{
+    gap:8px;
+    margin-top:12px;
+  }
+  .lb{
+    min-height:64px;
+    padding:12px;
+    border-radius:16px;
+  }
+  .lb .lb-title{
+    font-size:14px;
+  }
   .actions{
     display:grid;
     grid-template-columns:1fr;
+    gap:8px;
+    margin-top:14px;
   }
   .pick-grid,
   .pick-grid.solo{
     grid-template-columns:1fr;
   }
   .pcard{
-    min-height:520px;
+    min-height:486px;
+    border-radius:22px;
+  }
+  .pcard-inner{
+    gap:12px;
+    padding:12px;
   }
   .pcard-poster-wrap{
-    height:292px;
-    flex-basis:292px;
+    height:274px;
+    flex-basis:274px;
+  }
+  .pcard-poster,
+  .pcard-poster-empty{
+    border-radius:16px;
+  }
+  .pcard-title{
+    font-size:clamp(1.45rem,7.2vw,2rem);
+    min-height:3.65rem;
+  }
+  .pcard-line{
+    font-size:12px;
+    line-height:1.5;
+  }
+  .pcard-line.meta{
+    min-height:18px;
+  }
+  .pcard-line.director{
+    min-height:36px;
+  }
+  .pbadge{
+    min-height:28px;
+    padding:6px 10px;
+    font-size:10px;
+  }
+  .list-top{
+    gap:12px;
+  }
+  .lctrl{
+    gap:8px;
+  }
+  .search{
+    min-width:0;
+    font-size:13px;
+    padding:12px 13px;
   }
 }
 
@@ -1181,6 +1360,14 @@ input.r::-moz-range-thumb{
             <p><strong>3.</strong> Unzip it and grab <strong>watchlist.csv</strong></p>
             <p><strong>4.</strong> Upload it here</p>
           </div>
+          <div class="helper-card">
+            <div class="api-head">
+              <span>TMDb API key</span>
+              <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">Get one</a>
+            </div>
+            <input type="text" class="api-input" id="apikey" placeholder="Paste TMDb API key or read access token" autocomplete="off" spellcheck="false">
+            <div class="api-note">Used for posters, director, runtime, and language. Saved locally in your browser.</div>
+          </div>
         </div>
 
         <div class="err-box" id="err"></div>
@@ -1331,7 +1518,12 @@ const posterThumb=f=>f.poster?`<img src="${esc(f.poster)}" alt="Poster for ${esc
 
 function loadCache(){try{const c=localStorage.getItem(CACHE_KEY);if(c)cache=JSON.parse(c)}catch(e){}}
 function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify(cache))}catch(e){}}
-function loadKey(){try{tmdbKey=localStorage.getItem(KEY_STORE)||''}catch(e){}}
+function loadKey(){
+  try{
+    tmdbKey=localStorage.getItem(KEY_STORE)||''
+    if($('apikey'))$('apikey').value=tmdbKey
+  }catch(e){}
+}
 function saveKey(k){try{localStorage.setItem(KEY_STORE,k)}catch(e){}}
 function cacheKey(f){return f.uri||`${f.title}|${f.year}`}
 
@@ -1697,7 +1889,7 @@ function doPick(picks){
 function loadFile(file){
   if(!file)return
   $('err').style.display='none'
-  loadKey()
+  tmdbKey=$('apikey')?.value.trim()||localStorage.getItem(KEY_STORE)||''
   if(tmdbKey)saveKey(tmdbKey)
   loadCache()
 
@@ -1776,10 +1968,20 @@ document.querySelectorAll('#lang-row .lb').forEach(btn=>{
     const key=btn.dataset.l
     const otherKey=key==='en'?'foreign':'en'
 
-    if(langFilters[key]&&!langFilters[otherKey])return
+    if(langFilters.en&&langFilters.foreign){
+      langFilters[key]=true
+      langFilters[otherKey]=false
+    }else if(langFilters[key]&&!langFilters[otherKey]){
+      langFilters.en=true
+      langFilters.foreign=true
+    }else{
+      langFilters[key]=true
+      langFilters[otherKey]=false
+    }
 
-    langFilters[key]=!langFilters[key]
-    btn.classList.toggle('on',langFilters[key])
+    document.querySelectorAll('#lang-row .lb').forEach(b=>{
+      b.classList.toggle('on',langFilters[b.dataset.l])
+    })
     updateCount()
   })
 })
