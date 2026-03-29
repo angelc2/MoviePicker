@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Letterboxd Watchlist Picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  color-scheme:dark;
+  --bg:#090b0e;
+  --bg2:#0f1318;
+  --surface:rgba(18,22,28,.86);
+  --surface-2:rgba(23,28,35,.92);
+  --surface-3:rgba(28,34,43,.96);
+  --border:rgba(255,255,255,.09);
+  --border-strong:rgba(255,255,255,.15);
+  --text:#f6f7f9;
+  --muted:rgba(246,247,249,.68);
+  --muted-2:rgba(246,247,249,.46);
+  --gold:#ffbe55;
+  --gold-soft:rgba(255,190,85,.14);
+  --green:#00d26a;
+  --green-soft:rgba(0,210,106,.12);
+  --blue:#3e8bff;
+  --blue-soft:rgba(62,139,255,.12);
+  --red:#ff7b72;
+  --shadow:0 24px 60px rgba(0,0,0,.34);
+  --shadow-soft:0 10px 28px rgba(0,0,0,.22);
+  --radius-xl:28px;
+  --radius-lg:22px;
+  --radius-md:16px;
+  --radius-sm:12px;
+  --font-display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Helvetica Neue",Arial,sans-serif;
+  --font-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+}
+
+html,body{min-height:100%}
+body{
+  background:
+    radial-gradient(circle at top left, rgba(255,190,85,.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(0,210,106,.09), transparent 28%),
+    linear-gradient(180deg,#0a0d10 0%,#090b0e 40%,#08090c 100%);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh;
+  padding:20px 14px 44px;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+.app{
+  width:100%;
+  max-width:1120px;
+  margin:0 auto;
+}
+.view{display:none}
+.view.active{display:block}
+
+.shell{
+  display:grid;
+  gap:18px;
+}
+@media(min-width:900px){
+  .shell.two-col{
+    grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);
+    align-items:start;
+  }
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:18px;
+  flex-wrap:wrap;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.brand-mark{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  position:relative;
+  background:linear-gradient(135deg,rgba(255,190,85,.28),rgba(62,139,255,.18) 55%,rgba(0,210,106,.18));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:var(--shadow-soft);
+  overflow:hidden;
+}
+.brand-mark::before,
+.brand-mark::after{
+  content:"";
+  position:absolute;
+  inset:auto 7px 7px auto;
+  border-radius:999px;
+}
+.brand-mark::before{
+  width:12px;
+  height:12px;
+  left:8px;
+  top:14px;
+  background:#ffbe55;
+  box-shadow:15px 0 0 #00d26a,30px 0 0 #3e8bff;
+}
+.brand-text strong{
+  display:block;
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:-.02em;
+}
+.brand-text span{
+  display:block;
+  margin-top:2px;
+  font-size:11px;
+  color:var(--muted);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.status-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.04);
+  color:var(--muted);
+  font-size:12px;
+  backdrop-filter:blur(18px);
+}
+.status-pill::before{
+  content:"";
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 0 4px rgba(0,210,106,.12);
+}
+
+.panel{
+  position:relative;
+  background:linear-gradient(180deg,rgba(22,27,34,.9),rgba(15,18,24,.94));
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.panel.soft{
+  box-shadow:var(--shadow-soft);
+}
+.panel::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto 0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
+  pointer-events:none;
+}
+.panel-body{
+  padding:22px;
+}
+@media(min-width:700px){
+  .panel-body{
+    padding:28px;
+  }
+}
+
+.hero{
+  min-height:100%;
+}
+.hero-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  padding:7px 12px;
+  color:var(--muted);
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:18px;
+}
+.hero-kicker::before{
+  content:"";
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:linear-gradient(90deg,#ffbe55,#00d26a,#3e8bff);
+}
+.hero h1{
+  font-family:var(--font-display);
+  font-size:clamp(2.2rem,5vw,4rem);
+  line-height:.96;
+  letter-spacing:-.06em;
+  font-weight:800;
+  max-width:9ch;
+}
+.hero p{
+  margin-top:16px;
+  max-width:56ch;
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.75;
+}
+.hero-grid{
+  margin-top:22px;
+  display:grid;
+  gap:12px;
+}
+@media(min-width:680px){
+  .hero-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+.hero-stat{
+  padding:14px 14px 15px;
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.04);
+}
+.hero-stat strong{
+  display:block;
+  font-size:14px;
+  font-weight:700;
+}
+.hero-stat span{
+  display:block;
+  margin-top:5px;
+  font-size:12px;
+  line-height:1.6;
+  color:var(--muted);
+}
+
+.upload-card{
+  display:grid;
+  gap:14px;
+}
+.dropzone{
+  position:relative;
+  border-radius:26px;
+  border:1px dashed rgba(255,255,255,.18);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02)),
+    radial-gradient(circle at top, rgba(255,190,85,.09), transparent 44%);
+  padding:28px 20px;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .18s,background .18s,transform .18s,box-shadow .18s;
+  min-height:260px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.dropzone:hover,
+.dropzone.over{
+  border-color:rgba(255,190,85,.44);
+  background:
+    linear-gradient(180deg,rgba(255,190,85,.08),rgba(255,255,255,.03)),
+    radial-gradient(circle at top, rgba(255,190,85,.12), transparent 48%);
+  transform:translateY(-1px);
+  box-shadow:var(--shadow-soft);
+}
+.dropzone input[type=file]{
+  display:none;
+}
+.dropzone::before,
+.dropzone::after{
+  content:"";
+  position:absolute;
+  left:14px;
+  right:14px;
+  height:10px;
+  border-radius:999px;
+  opacity:.2;
+  pointer-events:none;
+}
+.dropzone::before{
+  top:12px;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.72) 0 34%, transparent 36%) left center/16px 10px repeat-x;
+}
+.dropzone::after{
+  bottom:12px;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.72) 0 34%, transparent 36%) left center/16px 10px repeat-x;
+}
+.dz-icon{
+  width:58px;
+  height:58px;
+  margin:0 auto 16px;
+  display:grid;
+  place-items:center;
+  border-radius:18px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  color:var(--gold);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.dz-lbl{
+  font-family:var(--font-display);
+  font-size:24px;
+  font-weight:750;
+  letter-spacing:-.04em;
+}
+.dz-sub{
+  margin-top:8px;
+  color:var(--muted);
+  line-height:1.75;
+  font-size:14px;
+}
+.dz-sub code{
+  display:inline-block;
+  margin-top:6px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.07);
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text);
+}
+
+.dz-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:16px auto 0;
+  min-height:44px;
+  padding:12px 18px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  font:inherit;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:-.01em;
+  cursor:pointer;
+  transition:transform .16s,background .16s,border-color .16s;
+}
+.dz-btn:hover{
+  transform:translateY(-1px);
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.18);
+}
+.dz-btn:focus-visible{
+  outline:none;
+  box-shadow:0 0 0 4px rgba(255,190,85,.1);
+  border-color:rgba(255,190,85,.42);
+}
+.helper-stack{
+  display:grid;
+  gap:14px;
+}
+.helper-stack{
+  display:grid;
+  gap:14px;
+}
+.helper-card{
+  border-radius:22px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.03);
+  padding:18px;
+}
+.helper-card h2{
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:12px;
+}
+.helper-card p{
+  font-size:14px;
+  line-height:1.75;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.helper-card strong{
+  color:var(--text);
+  font-weight:700;
+}
+.helper-card a{
+  color:var(--gold);
+  text-decoration:none;
+}
+.helper-card a:hover{
+  opacity:.9;
+}
+.api-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.api-head span{
+  font-size:13px;
+  font-weight:700;
+}
+.api-head a{
+  font-size:12px;
+  color:var(--gold);
+  text-decoration:none;
+}
+.api-input,
+.search{
+  width:100%;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  border-radius:16px;
+  padding:14px 15px;
+  font:inherit;
+  outline:none;
+  transition:border-color .16s,background .16s,box-shadow .16s;
+}
+.api-input:focus,
+.search:focus{
+  border-color:rgba(255,190,85,.42);
+  background:rgba(255,255,255,.06);
+  box-shadow:0 0 0 4px rgba(255,190,85,.08);
+}
+.api-input::placeholder,
+.search::placeholder{
+  color:var(--muted-2);
+}
+.api-note{
+  margin-top:9px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.65;
+}
+.err-box{
+  display:none;
+  margin-top:14px;
+  padding:13px 14px;
+  border-radius:16px;
+  border:1px solid rgba(255,123,114,.22);
+  background:rgba(255,123,114,.08);
+  color:var(--red);
+  line-height:1.7;
+  font-size:13px;
+}
+
+/* Loading */
+.load-outer{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-height:72vh;
+  text-align:center;
+  padding:28px 18px;
+}
+.load-frame{
+  width:min(100%,560px);
+  padding:30px 26px;
+  border-radius:32px;
+  border:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(21,25,32,.92),rgba(12,15,20,.96));
+  box-shadow:var(--shadow);
+}
+.load-spin{
+  width:48px;
+  height:48px;
+  margin:0 auto 20px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.08);
+  border-top-color:var(--gold);
+  animation:rot .85s linear infinite;
+}
+@keyframes rot{to{transform:rotate(360deg)}}
+.load-title{
+  font-family:var(--font-display);
+  font-size:32px;
+  font-weight:760;
+  letter-spacing:-.04em;
+}
+.load-sub{
+  margin-top:8px;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.7;
+}
+.load-film{
+  height:22px;
+  margin-top:20px;
+  color:var(--text);
+  font-size:13px;
+  opacity:0;
+  transition:opacity .2s;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.load-film.vis{opacity:1}
+.load-bar-wrap{
+  width:100%;
+  height:10px;
+  margin-top:18px;
+  border-radius:999px;
+  background:rgba(255,255,255,.07);
+  overflow:hidden;
+}
+.load-bar{
+  width:0%;
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--gold),#ffd88a 55%,#fff0c8);
+  transition:width .22s;
+}
+.load-ct{
+  margin-top:10px;
+  color:var(--muted);
+  font-size:12px;
+}
+.btn-skip,
+.btn-gold,
+.btn-ghost,
+.btn-sp,
+.btn-sg{
+  appearance:none;
+  border:none;
+  border-radius:999px;
+  padding:12px 16px;
+  font:inherit;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:-.01em;
+  cursor:pointer;
+  transition:transform .16s,opacity .16s,background .16s,border-color .16s,box-shadow .16s;
+}
+.btn-skip,
+.btn-ghost,
+.btn-sg{
+  background:rgba(255,255,255,.05);
+  color:var(--text);
+  border:1px solid rgba(255,255,255,.1);
+}
+.btn-skip:hover,
+.btn-ghost:hover,
+.btn-sg:hover{
+  transform:translateY(-1px);
+  background:rgba(255,255,255,.07);
+  border-color:rgba(255,255,255,.16);
+}
+.btn-gold,
+.btn-sp{
+  color:#1f1504;
+  border:1px solid rgba(255,255,255,.16);
+  background:linear-gradient(180deg,#ffd88d,#ffbe55);
+  box-shadow:0 14px 28px rgba(255,190,85,.18);
+}
+.btn-gold:hover,
+.btn-sp:hover{
+  transform:translateY(-1px);
+  opacity:.98;
+}
+.load-frame .btn-skip{
+  margin-top:18px;
+}
+
+/* Filters */
+.section-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+.section-head h1,
+.section-head strong{
+  font-family:var(--font-display);
+  font-size:clamp(2rem,4vw,3rem);
+  line-height:.98;
+  letter-spacing:-.05em;
+  font-weight:800;
+}
+.section-head p,
+.section-head span{
+  display:block;
+  margin-top:8px;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.7;
+}
+.summary-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:42px;
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  color:var(--muted);
+  font-size:12px;
+}
+.summary-chip::before{
+  content:"";
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 0 5px rgba(255,190,85,.1);
+}
+
+.filters-grid{
+  display:grid;
+  gap:16px;
+}
+@media(min-width:860px){
+  .filters-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+.fb{
+  position:relative;
+  border-radius:24px;
+  border:1px solid var(--border);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
+  padding:20px;
+  overflow:hidden;
+}
+.fb::after{
+  content:"";
+  position:absolute;
+  inset:auto -30px -34px auto;
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,.06), transparent 60%);
+  pointer-events:none;
+}
+.fb-lbl{
+  display:block;
+  margin-bottom:8px;
+  color:var(--muted);
+  font-size:12px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.fb h3{
+  font-family:var(--font-display);
+  font-size:22px;
+  font-weight:760;
+  letter-spacing:-.04em;
+  margin-bottom:0;
+}
+.fb-copy{
+  display:none;
+}
+.sl-outer{
+  position:relative;
+  padding-top:40px;
+  margin-top:10px;
+}
+.slv{
+  position:absolute;
+  top:0;
+  transform:translateX(-50%);
+  color:var(--gold);
+  font-size:17px;
+  font-weight:800;
+  line-height:1;
+  pointer-events:none;
+  white-space:nowrap;
+}
+.sl-ends{
+  display:flex;
+  justify-content:space-between;
+  margin-top:10px;
+  color:var(--muted-2);
+  font-size:11px;
+}
+input.r{
+  -webkit-appearance:none;
+  appearance:none;
+  width:100%;
+  height:8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  outline:none;
+  cursor:pointer;
+}
+input.r::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:linear-gradient(180deg,#fff6df,#ffcf77);
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 8px 18px rgba(0,0,0,.2),0 0 0 6px rgba(255,190,85,.08);
+}
+input.r::-moz-range-thumb{
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background:linear-gradient(180deg,#fff6df,#ffcf77);
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 8px 18px rgba(0,0,0,.2),0 0 0 6px rgba(255,190,85,.08);
+}
+.dual{
+  position:relative;
+  height:22px;
+  display:flex;
+  align-items:center;
+}
+.dual-track{
+  position:absolute;
+  left:0;
+  right:0;
+  height:8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  pointer-events:none;
+}
+.dual-fill{
+  position:absolute;
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--gold),#ffd88a);
+}
+.dual input.r{
+  position:absolute;
+  width:100%;
+  background:transparent!important;
+  pointer-events:none;
+}
+.dual input.r::-webkit-slider-thumb{pointer-events:all}
+.dual input.r::-moz-range-thumb{pointer-events:all}
+
+.lang-row{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+.lb{
+  min-height:78px;
+  padding:14px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  cursor:pointer;
+  text-align:left;
+  transition:transform .16s,background .16s,border-color .16s,opacity .16s;
+}
+.lb:hover{
+  transform:translateY(-1px);
+  background:rgba(255,255,255,.055);
+}
+.lb .lb-title{
+  display:block;
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:-.02em;
+}
+.lb.on{
+  border-color:rgba(255,190,85,.34);
+  background:linear-gradient(180deg,rgba(255,190,85,.16),rgba(255,255,255,.04));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.lb:not(.on){
+  opacity:.76;
+}
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:18px;
+}
+.actions .btn-gold,
+.actions .btn-ghost,
+.actions .btn-sp,
+.actions .btn-sg{
+  min-height:46px;
+}
+@media(max-width:560px){
+  .actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .pick-grid,
+  .pick-grid.solo{
+    grid-template-columns:1fr;
+  }
+  .pcard{
+    min-height:520px;
+  }
+  .pcard-poster-wrap{
+    height:292px;
+    flex-basis:292px;
+  }
+}
+
+/* Picks */
+.pick-shell{
+  display:grid;
+  gap:16px;
+}
+.pick-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+.pick-kicker{
+  display:inline-block;
+  padding:8px 11px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  color:var(--muted);
+  font-size:11px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.pick-title{
+  margin-top:12px;
+  font-family:var(--font-display);
+  font-size:clamp(2rem,4vw,3rem);
+  font-weight:800;
+  letter-spacing:-.05em;
+  line-height:.98;
+}
+.pick-sub{
+  margin-top:10px;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.75;
+  max-width:48ch;
+}
+.pick-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(248px,1fr));
+  gap:18px;
+  align-items:stretch;
+  grid-auto-rows:1fr;
+}
+.pick-grid.solo{
+  grid-template-columns:minmax(0,340px);
+  justify-content:start;
+}
+.pcard-link{
+  display:block;
+  color:inherit;
+  text-decoration:none;
+  min-width:0;
+  height:100%;
+}
+.pcard{
+  position:relative;
+  height:100%;
+  min-height:560px;
+  border-radius:28px;
+  border:1px solid rgba(255,255,255,.09);
+  background:
+    linear-gradient(180deg,rgba(24,29,36,.95),rgba(14,17,22,.98));
+  overflow:hidden;
+  transition:transform .18s,border-color .18s,background .18s,box-shadow .18s;
+  box-shadow:var(--shadow-soft);
+}
+.pcard.has-link:hover{
+  transform:translateY(-2px);
+  border-color:rgba(255,190,85,.26);
+  box-shadow:var(--shadow);
+}
+.pcard-inner{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  padding:16px;
+  height:100%;
+}
+.pcard-poster-wrap{
+  width:100%;
+  height:320px;
+  flex:0 0 320px;
+  border-radius:0;
+  overflow:visible;
+  background:transparent;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+}
+.pcard-poster{
+  width:auto;
+  max-width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  background:transparent;
+  border-radius:20px;
+  box-shadow:0 12px 28px rgba(0,0,0,.24);
+}
+.pcard-poster-empty{
+  width:min(100%,214px);
+  height:100%;
+  border-radius:20px;
+  background:#0d1014;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:11px;
+  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+.pcard-body{
+  display:flex;
+  flex-direction:column;
+  flex:1;
+  min-height:0;
+  gap:10px;
+  padding:0 4px 0;
+}
+.pcard-title{
+  font-family:var(--font-display);
+  font-size:clamp(1.6rem,2.35vw,2.1rem);
+  font-weight:780;
+  letter-spacing:-.05em;
+  line-height:.96;
+  min-height:4.05rem;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+}
+.pcard-line{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.65;
+}
+.pcard-line.meta{
+  min-height:22px;
+}
+.pcard-line.director{
+  min-height:42px;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+}
+.pcard-badges{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-self:start;
+  margin-top:auto;
+  padding-top:6px;
+}
+.pbadge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:31px;
+  padding:6px 11px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  font-size:11px;
+}
+.pbadge.gold{
+  background:rgba(255,190,85,.12);
+  border-color:rgba(255,190,85,.24);
+  color:#ffd88a;
+}
+.pbadge.green{
+  background:rgba(0,210,106,.12);
+  border-color:rgba(0,210,106,.2);
+  color:#7bffb5;
+}
+
+/* List */
+.list-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+.list-meta strong{
+  display:block;
+  font-family:var(--font-display);
+  font-size:clamp(2rem,4vw,3rem);
+  line-height:.98;
+  letter-spacing:-.05em;
+  font-weight:800;
+}
+.list-meta span{
+  display:block;
+  margin-top:8px;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.7;
+}
+.lctrl{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  width:100%;
+}
+.search{
+  flex:1 1 220px;
+  min-width:200px;
+}
+.film-list{
+  border-radius:28px;
+  border:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(18,22,28,.94),rgba(12,15,20,.98));
+  overflow:hidden;
+  box-shadow:var(--shadow-soft);
+}
+.film-list::-webkit-scrollbar{width:8px}
+.film-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:999px}
+.li{
+  display:grid;
+  grid-template-columns:auto auto minmax(0,1fr);
+  gap:12px;
+  align-items:center;
+  padding:14px 16px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  cursor:pointer;
+  transition:background .15s;
+}
+.li:last-child{border-bottom:none}
+.li:hover{background:rgba(255,255,255,.04)}
+.linum{
+  width:28px;
+  color:var(--muted-2);
+  font-size:11px;
+  text-align:center;
+}
+.liposter{
+  width:52px;
+  height:78px;
+  border-radius:14px;
+  overflow:hidden;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.liposter img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#0d1014;
+}
+.liposter span{
+  font-size:10px;
+  color:var(--muted-2);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.liinfo{
+  min-width:0;
+}
+.lititle{
+  font-family:var(--font-display);
+  font-size:18px;
+  font-weight:720;
+  letter-spacing:-.03em;
+  line-height:1.12;
+}
+.limeta{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.7;
+}
+.nores{
+  display:none;
+  padding:38px 20px;
+  text-align:center;
+  color:var(--muted);
+  font-size:13px;
+}
+@media(max-width:560px){
+  .li{
+    grid-template-columns:auto 1fr;
+  }
+  .linum{
+    display:none;
+  }
+  .lctrl{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .search{
+    grid-column:1/-1;
+    min-width:0;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div id="vi" class="view active">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">
+        <strong>Letterboxd Picker</strong>
+        <span>Watchlist picker</span>
+      </div>
+    </div>
+    <div class="status-pill">Ready for tonight</div>
+  </div>
+
+  <div class="shell two-col">
+    <section class="panel hero">
+      <div class="panel-body">
+        <div class="hero-kicker">Tonight starts here</div>
+        <h1>Pick a movie without killing the mood.</h1>
+        <p>Drop in your Letterboxd watchlist, set a few filters, and get a quick answer when nobody wants to scroll forever.</p>
+
+        <div class="hero-grid">
+          <div class="hero-stat">
+            <strong>Use your watchlist</strong>
+            <span>Pull straight from your own saved films instead of choosing from scratch.</span>
+          </div>
+          <div class="hero-stat">
+            <strong>Filter fast</strong>
+            <span>Narrow by runtime, year, and language when you already know the kind of night it is.</span>
+          </div>
+          <div class="hero-stat">
+            <strong>Open and watch</strong>
+            <span>Browse your list or jump straight to a film page once you land on a pick.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel soft">
+      <div class="panel-body upload-card">
+        <div class="dropzone" id="dz" tabindex="0" role="button" aria-label="Choose watchlist CSV or drop it here">
+          <input type="file" id="fi" accept=".csv,text/csv">
+          <div class="dz-icon">
+            <svg width="28" height="28" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+              <path d="M18 23V10M18 10L13 15M18 10L23 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 25.5V27a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="dz-lbl">Drop watchlist.csv</div>
+          <div class="dz-sub">
+            Choose from your device or drag it here<br>
+            <code>watchlist.csv</code>
+          </div>
+          <button type="button" class="dz-btn" id="pickcsv">Choose CSV</button>
+        </div>
+
+        <div class="helper-stack">
+          <div class="helper-card">
+            <h2>How to get the file</h2>
+            <p><strong>1.</strong> Open <a href="https://letterboxd.com/settings/data/" target="_blank" rel="noopener noreferrer">Letterboxd data export</a></p>
+            <p><strong>2.</strong> Download your ZIP</p>
+            <p><strong>3.</strong> Unzip it and grab <strong>watchlist.csv</strong></p>
+            <p><strong>4.</strong> Upload it here</p>
+          </div>
+        </div>
+
+        <div class="err-box" id="err"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="vload" class="view">
+  <div class="load-outer">
+    <div class="load-frame">
+      <div class="load-spin"></div>
+      <div class="load-title">Loading film data</div>
+      <div class="load-sub">Pulling posters and film info for your watchlist.</div>
+      <div class="load-film" id="lfilm"></div>
+      <div class="load-bar-wrap"><div class="load-bar" id="lbar"></div></div>
+      <div class="load-ct" id="lct">Preparing…</div>
+      <button class="btn-skip" id="lskip">Skip remaining</button>
+    </div>
+  </div>
+</div>
+
+<div id="vf" class="view">
+  <div class="section-head">
+    <div>
+      <h1>Your watchlist</h1>
+    </div>
+    <div class="summary-chip" id="wlct">0 films</div>
+  </div>
+
+  <div class="filters-grid">
+    <section class="fb">
+      <span class="fb-lbl">How many picks</span>
+      <h3>How many films?</h3>
+      <div class="sl-outer">
+        <span class="slv" id="av">1</span>
+        <input type="range" class="r" id="amtsl" min="1" max="10" value="1" step="1">
+        <div class="sl-ends"><span>1</span><span>10</span></div>
+      </div>
+    </section>
+
+    <section class="fb" id="len-block">
+      <span class="fb-lbl">Runtime filter</span>
+      <h3>Film length</h3>
+      <div class="sl-outer">
+        <span class="slv" id="lv-lo">60</span>
+        <span class="slv" id="lv-hi">300</span>
+        <div class="dual">
+          <div class="dual-track"><div class="dual-fill" id="lfill"></div></div>
+          <input type="range" class="r" id="lenlo" min="60" max="295" value="60" step="5">
+          <input type="range" class="r" id="lenhi" min="65" max="300" value="300" step="5">
+        </div>
+        <div class="sl-ends"><span>60 min</span><span>300 min</span></div>
+      </div>
+    </section>
+
+    <section class="fb" id="year-block">
+      <span class="fb-lbl">Release window</span>
+      <h3>Release year</h3>
+      <div class="sl-outer">
+        <span class="slv" id="yv-lo">—</span>
+        <span class="slv" id="yv-hi">—</span>
+        <div class="dual">
+          <div class="dual-track"><div class="dual-fill" id="yfill"></div></div>
+          <input type="range" class="r" id="yearl" min="1900" max="2024" value="1900" step="1">
+          <input type="range" class="r" id="yearh" min="1901" max="2025" value="2025" step="1">
+        </div>
+      </div>
+    </section>
+
+    <section class="fb">
+      <span class="fb-lbl">Language filter</span>
+      <h3>Language</h3>
+      <div class="lang-row" id="lang-row">
+        <button class="lb on" data-l="en" type="button">
+          <span class="lb-title">English</span>
+        </button>
+        <button class="lb on" data-l="foreign" type="button">
+          <span class="lb-title">Foreign</span>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="actions">
+    <button class="btn-gold" id="fpick">Pick for me</button>
+    <button class="btn-ghost" id="fbrowse">Browse list</button>
+    <button class="btn-ghost" id="fback">Load another</button>
+  </div>
+</div>
+
+<div id="vp" class="view">
+  <div class="pick-shell">
+    <div class="pick-header">
+      <div>
+        <div class="pick-kicker" id="peyebrow">Tonight's pick</div>
+        <div class="pick-title">Ready to roll.</div>
+      </div>
+      <div class="actions">
+        <button class="btn-gold" id="pagain">Pick again</button>
+        <button class="btn-ghost" id="pback">Back to filters</button>
+      </div>
+    </div>
+
+    <div class="pick-grid" id="pgrid"></div>
+  </div>
+</div>
+
+<div id="vl" class="view">
+  <div class="list-top">
+    <div class="list-meta">
+      <strong>Your watchlist</strong>
+      <span id="lct2"></span>
+    </div>
+
+    <div class="lctrl">
+      <input type="text" class="search" id="search" placeholder="Search title or year">
+      <button class="btn-sp" id="lpick">Pick</button>
+      <button class="btn-sg" id="lback">Back</button>
+    </div>
+  </div>
+
+  <div class="film-list" id="flist"></div>
+  <div class="nores" id="nores">No films match.</div>
+</div>
+
+</div>
+
+<script>
+const CACHE_KEY='lbp_v10_ui'
+const KEY_STORE='lbp_apikey'
+let movies=[]
+let amt=1
+let langFilters={en:true,foreign:true}
+let minYear=1900
+let maxYear=2025
+let cache={}
+let stopped=false
+let enrichDone=false
+let tmdbKey=''
+
+const $=id=>document.getElementById(id)
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+const fmtRt=m=>{if(!m)return'';const h=Math.floor(m/60),r=m%60;return h?(r?`${h}h ${r}m`:`${h}h`):`${r}m`}
+const filmLangLabel=f=>{if(f.lang==='en')return'English';if(f.lang)return'Foreign';return'Unknown'}
+const filmLangChip=f=>{if(f.lang==='en')return'English';if(f.lang)return`Foreign · ${String(f.lang).toUpperCase()}`;return'Language unknown'}
+const posterThumb=f=>f.poster?`<img src="${esc(f.poster)}" alt="Poster for ${esc(f.title)}" loading="lazy">`:`<span>No art</span>`
+
+function loadCache(){try{const c=localStorage.getItem(CACHE_KEY);if(c)cache=JSON.parse(c)}catch(e){}}
+function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify(cache))}catch(e){}}
+function loadKey(){try{tmdbKey=localStorage.getItem(KEY_STORE)||''}catch(e){}}
+function saveKey(k){try{localStorage.setItem(KEY_STORE,k)}catch(e){}}
+function cacheKey(f){return f.uri||`${f.title}|${f.year}`}
+
+function show(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'))
+  $(id).classList.add('active')
+}
+
+function parseRow(line){
+  const cols=[]
+  let cur=''
+  let q=false
+  for(let i=0;i<line.length;i++){
+    const c=line[i]
+    if(c==='"'){
+      if(q&&line[i+1]==='"'){cur+='"';i++}
+      else q=!q
+    }else if(c===','&&!q){
+      cols.push(cur)
+      cur=''
+    }else{
+      cur+=c
+    }
+  }
+  cols.push(cur)
+  return cols
+}
+
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/)
+  if(lines.length<2)throw new Error('File appears empty.')
+  const h=parseRow(lines[0]).map(x=>x.trim().toLowerCase())
+  const ni=h.findIndex(x=>x==='name')
+  const yi=h.findIndex(x=>x==='year')
+  const ui=h.findIndex(x=>x.includes('letterboxd uri'))
+  if(ni===-1)throw new Error('No "Name" column found. Make sure this is watchlist.csv from your Letterboxd export.')
+  const out=[]
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue
+    const row=parseRow(lines[i])
+    const title=row[ni]?.trim()
+    if(!title)continue
+    let uri=ui!==-1?row[ui]?.trim()||null:null
+    if(uri&&!uri.startsWith('http'))uri='https://letterboxd.com'+uri
+    const year=yi!==-1?row[yi]?.trim()||null:null
+    out.push({title,year,uri})
+  }
+  if(!out.length)throw new Error('No films found in the file.')
+  return out
+}
+
+function tmdbReq(path,signal){
+  const isBearer=tmdbKey.startsWith('ey')
+  const url=isBearer
+    ?`https://api.themoviedb.org/3${path}`
+    :`https://api.themoviedb.org/3${path}${path.includes('?')?'&':'?'}api_key=${tmdbKey}`
+  const opts={signal:signal||AbortSignal.timeout(8000)}
+  if(isBearer)opts.headers={'Authorization':`Bearer ${tmdbKey}`}
+  return fetch(url,opts).then(r=>{
+    if(!r.ok)throw new Error(`TMDb ${r.status}`)
+    return r.json()
+  })
+}
+
+async function getFilmData(film,signal){
+  const q=encodeURIComponent(film.title)
+  let result=null
+
+  if(film.year){
+    try{
+      const d=await tmdbReq(`/search/movie?query=${q}&year=${film.year}&language=en-US`,signal)
+      result=d.results?.[0]||null
+    }catch(e){
+      if(e.name==='AbortError')return null
+    }
+  }
+
+  if(!result){
+    try{
+      const d=await tmdbReq(`/search/movie?query=${q}&language=en-US`,signal)
+      result=d.results?.[0]||null
+    }catch(e){
+      if(e.name==='AbortError')return null
+    }
+  }
+
+  if(!result)return null
+
+  try{
+    const det=await tmdbReq(`/movie/${result.id}?append_to_response=credits`,signal)
+    const runtime=det.runtime>0?det.runtime:null
+    const poster=result.poster_path?`https://image.tmdb.org/t/p/w500${result.poster_path}`:null
+    const directors=det.credits?.crew?.filter(c=>c.job==='Director')?.map(c=>c.name)||[]
+    const lang=result.original_language||null
+    return{runtime,poster,director:directors.join(', ')||null,lang}
+  }catch(e){
+    return null
+  }
+}
+
+let flashTimer
+function flash(text){
+  const el=$('lfilm')
+  el.classList.remove('vis')
+  clearTimeout(flashTimer)
+  flashTimer=setTimeout(()=>{
+    el.textContent=text
+    el.classList.add('vis')
+  },100)
+}
+
+async function enrichAll(){
+  const need=movies.filter(f=>cache[cacheKey(f)]===undefined)
+  if(!need.length||!tmdbKey){goFilters();return}
+  const total=need.length
+  let done=0
+  $('lbar').style.width='0%'
+  $('lct').textContent=`0 of ${total} films`
+
+  const CONCUR=8
+  for(let i=0;i<need.length;i+=CONCUR){
+    if(stopped)break
+    await Promise.all(need.slice(i,i+CONCUR).map(async f=>{
+      const key=cacheKey(f)
+      const data=await getFilmData(f)
+      cache[key]={
+        rt:data?.runtime??null,
+        poster:data?.poster??null,
+        dir:data?.director??null,
+        lang:data?.lang??null
+      }
+      done++
+      flash(f.title)
+      $('lbar').style.width=Math.round(done/total*100)+'%'
+      $('lct').textContent=`${done} of ${total} films`
+    }))
+    if(i%16===0)saveCache()
+  }
+  saveCache()
+  goFilters()
+}
+
+function applyCache(){
+  movies.forEach(f=>{
+    const c=cache[cacheKey(f)]
+    f.runtime=c?.rt??undefined
+    f.poster=c?.poster??null
+    f.director=c?.dir??null
+    f.lang=c?.lang??null
+  })
+}
+
+function goFilters(){
+  if(enrichDone)return
+  enrichDone=true
+  saveCache()
+  applyCache()
+  initFilters()
+  show('vf')
+}
+
+function posLabel(id,val,min,max){
+  const el=$(id)
+  if(!el)return
+  const pct=(val-min)/(max-min)*100
+  el.style.left=`calc(${pct}% + ${10-pct*0.2}px)`
+  el.textContent=val
+}
+
+function updateAmtSl(){
+  const v=parseInt($('amtsl').value)
+  amt=v
+  posLabel('av',v,1,10)
+  $('amtsl').style.background=`linear-gradient(to right,var(--gold) ${(v-1)/9*100}%,rgba(255,255,255,.07) ${(v-1)/9*100}%)`
+}
+
+function updateLenSl(){
+  let lo=parseInt($('lenlo').value)
+  let hi=parseInt($('lenhi').value)
+  if(lo>=hi){
+    if(document.activeElement===$('lenlo'))lo=hi-5
+    else hi=lo+5
+    $('lenlo').value=lo
+    $('lenhi').value=hi
+  }
+  const p=(v,mn,mx)=>(v-mn)/(mx-mn)*100
+  $('lfill').style.left=p(lo,60,300)+'%'
+  $('lfill').style.width=(p(hi,60,300)-p(lo,60,300))+'%'
+  posLabel('lv-lo',lo,60,300)
+  posLabel('lv-hi',hi,60,300)
+  updateCount()
+}
+
+function updateYearSl(){
+  if($('year-block').style.display==='none')return
+  let lo=parseInt($('yearl').value)
+  let hi=parseInt($('yearh').value)
+  if(lo>=hi){
+    if(document.activeElement===$('yearl'))lo=hi-1
+    else hi=lo+1
+    $('yearl').value=lo
+    $('yearh').value=hi
+  }
+  const p=v=>(v-minYear)/(maxYear-minYear)*100
+  $('yfill').style.left=p(lo)+'%'
+  $('yfill').style.width=(p(hi)-p(lo))+'%'
+  posLabel('yv-lo',lo,minYear,maxYear)
+  posLabel('yv-hi',hi,minYear,maxYear)
+  updateCount()
+}
+
+function initFilters(){
+  const years=movies.map(m=>parseInt(m.year)).filter(y=>!isNaN(y)&&y>1800&&y<=2100)
+  minYear=years.length?Math.min(...years):1900
+  maxYear=years.length?Math.max(...years):2025
+
+  $('len-block').style.display=''
+
+  const showYear=maxYear>minYear
+  $('year-block').style.display=showYear?'':'none'
+
+  if(showYear){
+    $('yearl').min=minYear
+    $('yearl').max=maxYear-1
+    $('yearl').value=minYear
+    $('yearh').min=minYear+1
+    $('yearh').max=maxYear
+    $('yearh').value=maxYear
+  }
+
+  updateAmtSl()
+  updateLenSl()
+  updateYearSl()
+  updateCount()
+}
+
+function getPool(){
+  const lo=parseInt($('lenlo').value)
+  const hi=parseInt($('lenhi').value)
+  const defLen=lo===60&&hi===300
+  const loY=parseInt($('yearl').value)
+  const hiY=parseInt($('yearh').value)
+  const defYear=$('year-block').style.display==='none'||(loY===minYear&&hiY===maxYear)
+
+  return movies.filter(f=>{
+    if(f.runtime!=null&&f.runtime<=39)return false
+    if(!defLen){
+      if(!f.runtime||f.runtime<lo||f.runtime>hi)return false
+    }
+    if(!defYear&&f.year){
+      const y=parseInt(f.year)
+      if(!isNaN(y)&&(y<loY||y>hiY))return false
+    }
+
+    const hasEnglish=langFilters.en
+    const hasForeign=langFilters.foreign
+    const isEnglish=f.lang==='en'
+    const isForeign=!!f.lang&&f.lang!=='en'
+    const isUnknown=!f.lang
+
+    if(!hasEnglish&&!hasForeign)return false
+    if(isEnglish&&!hasEnglish)return false
+    if(isForeign&&!hasForeign)return false
+    if(isUnknown&&!(hasEnglish&&hasForeign))return false
+
+    return true
+  })
+}
+
+function updateCount(){
+  const pool=getPool()
+  const total=movies.filter(f=>!(f.runtime!=null&&f.runtime<=39)).length
+  $('wlct').textContent=`${pool.length} of ${total} films`
+}
+
+function renderList(items){
+  const fl=$('flist')
+  const nr=$('nores')
+  if(!items.length){
+    fl.style.display='none'
+    nr.style.display='block'
+    return
+  }
+
+  fl.style.display=''
+  nr.style.display='none'
+  fl.innerHTML=items.map((m,i)=>`
+    <div class="li" data-i="${i}">
+      <span class="linum">${i+1}</span>
+      <div class="liposter">${posterThumb(m)}</div>
+      <div class="liinfo">
+        <div class="lititle">${esc(m.title)}</div>
+        <div class="limeta">${[m.year||'',fmtRt(m.runtime),filmLangLabel(m),m.director?`dir. ${esc(m.director)}`:''].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>
+  `).join('')
+
+  fl.querySelectorAll('.li').forEach(el=>{
+    el.addEventListener('click',()=>doPick([items[+el.dataset.i]]))
+  })
+}
+
+function showList(){
+  const pool=getPool()
+  const q=$('search').value.toLowerCase().trim()
+  const shown=q?pool.filter(m=>m.title.toLowerCase().includes(q)||(m.year&&m.year.includes(q))):pool
+  $('lct2').textContent=q?`${shown.length} of ${pool.length} films`:`${pool.length} films`
+  renderList(shown)
+}
+
+function randPicks(n){
+  const pool=getPool()
+  return [...pool].sort(()=>Math.random()-.5).slice(0,Math.min(n,pool.length))
+}
+
+function makeCardMarkup(film){
+  const metaLine=[film.year||'',fmtRt(film.runtime)].filter(Boolean).join(' · ')
+  const directorLine=film.director?`Directed by ${esc(film.director)}`:''
+  const posterHtml=film.poster
+    ? `<div class="pcard-poster-wrap"><img class="pcard-poster" src="${esc(film.poster)}" alt="Poster for ${esc(film.title)}" loading="lazy"></div>`
+    : `<div class="pcard-poster-wrap"><div class="pcard-poster-empty">No poster</div></div>`
+
+  return `
+    <div class="pcard-inner">
+      ${posterHtml}
+      <div class="pcard-body">
+        <div class="pcard-title">${esc(film.title)}</div>
+        <div class="pcard-line meta">${metaLine||'&nbsp;'}</div>
+        <div class="pcard-line director">${directorLine||'&nbsp;'}</div>
+        <div class="pcard-badges">
+          <span class="pbadge gold">${esc(filmLangChip(film))}</span>
+          ${film.runtime?`<span class="pbadge">${esc(fmtRt(film.runtime))}</span>`:''}
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function doPick(picks){
+  if(!picks.length)return
+  show('vp')
+  $('peyebrow').textContent=picks.length===1?"Tonight's pick":"Tonight's picks"
+  const grid=$('pgrid')
+  grid.innerHTML=''
+  grid.className='pick-grid'+(picks.length===1?' solo':'')
+  picks.forEach(film=>{
+    const wrap=document.createElement(film.uri?'a':'div')
+    wrap.className='pcard-link'
+    if(film.uri){
+      wrap.href=film.uri
+      wrap.target='_blank'
+      wrap.rel='noopener noreferrer'
+      wrap.title=`Open ${film.title} on Letterboxd`
+    }
+    const card=document.createElement('div')
+    card.className='pcard'+(film.uri?' has-link':'')
+    card.innerHTML=makeCardMarkup(film)
+    wrap.appendChild(card)
+    grid.appendChild(wrap)
+  })
+}
+
+function loadFile(file){
+  if(!file)return
+  $('err').style.display='none'
+  loadKey()
+  if(tmdbKey)saveKey(tmdbKey)
+  loadCache()
+
+  const reader=new FileReader()
+  reader.onload=e=>{
+    try{
+      movies=parseCSV(e.target.result)
+      enrichDone=false
+      stopped=false
+      $('amtsl').value=1
+      $('lenlo').value=60
+      $('lenhi').value=300
+      langFilters={en:true,foreign:true}
+      document.querySelectorAll('#lang-row .lb').forEach(b=>b.classList.add('on'))
+
+      const need=movies.filter(f=>cache[cacheKey(f)]===undefined)
+      if(!need.length||!tmdbKey){
+        applyCache()
+        initFilters()
+        show('vf')
+      }else{
+        show('vload')
+        enrichAll()
+      }
+    }catch(err){
+      $('err').textContent=err.message
+      $('err').style.display='block'
+    }
+  }
+  reader.readAsText(file)
+}
+
+loadKey()
+
+$('fi').addEventListener('change',e=>loadFile(e.target.files[0]))
+$('pickcsv').addEventListener('click',e=>{
+  e.stopPropagation()
+  $('fi').click()
+})
+
+const dz=$('dz')
+dz.addEventListener('click',e=>{
+  if(e.target.closest('#pickcsv'))return
+  $('fi').click()
+})
+dz.addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key===' '){
+    e.preventDefault()
+    $('fi').click()
+  }
+})
+dz.addEventListener('dragover',e=>{
+  e.preventDefault()
+  dz.classList.add('over')
+})
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'))
+dz.addEventListener('drop',e=>{
+  e.preventDefault()
+  dz.classList.remove('over')
+  loadFile(e.dataTransfer.files[0])
+})
+
+$('lskip').addEventListener('click',()=>{
+  stopped=true
+  goFilters()
+})
+
+$('amtsl').addEventListener('input',updateAmtSl)
+$('lenlo').addEventListener('input',updateLenSl)
+$('lenhi').addEventListener('input',updateLenSl)
+$('yearl').addEventListener('input',updateYearSl)
+$('yearh').addEventListener('input',updateYearSl)
+
+document.querySelectorAll('#lang-row .lb').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const key=btn.dataset.l
+    const otherKey=key==='en'?'foreign':'en'
+
+    if(langFilters[key]&&!langFilters[otherKey])return
+
+    langFilters[key]=!langFilters[key]
+    btn.classList.toggle('on',langFilters[key])
+    updateCount()
+  })
+})
+
+$('fpick').addEventListener('click',()=>{
+  const p=randPicks(amt)
+  if(p.length)doPick(p)
+})
+$('fbrowse').addEventListener('click',()=>{
+  showList()
+  show('vl')
+})
+$('fback').addEventListener('click',()=>show('vi'))
+$('search').addEventListener('input',showList)
+$('lpick').addEventListener('click',()=>{
+  const p=randPicks(amt)
+  if(p.length)doPick(p)
+})
+$('lback').addEventListener('click',()=>{
+  updateCount()
+  show('vf')
+})
+$('pagain').addEventListener('click',()=>{
+  const p=randPicks(amt)
+  if(p.length)doPick(p)
+})
+$('pback').addEventListener('click',()=>{
+  updateCount()
+  show('vf')
+})
+</script>
+</body>
+</html>
