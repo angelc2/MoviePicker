@@ -762,7 +762,7 @@ input.r::-moz-range-thumb{
 }
 .lctrl{
   display:grid;
-  grid-template-columns:1fr auto auto;
+  grid-template-columns:1fr auto auto auto;
   gap:8px;
   width:100%;
 }
@@ -842,6 +842,27 @@ input.r::-moz-range-thumb{
 }
 @media(min-width:900px){
   .app{max-width:720px}
+}
+
+/* Card entrance animation */
+@keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.pcard{animation:cardIn .28s cubic-bezier(.22,.68,0,1.2) both}
+
+/* Poster fade-in */
+.pcard-poster{opacity:0;transition:opacity .3s}
+.pcard-poster.loaded{opacity:1}
+
+/* Empty pool error */
+.pick-err{
+  display:none;
+  padding:10px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,123,114,.22);
+  background:rgba(255,123,114,.08);
+  color:var(--red);
+  font-size:12px;
+  line-height:1.6;
+  margin-top:10px;
 }
 </style>
 </head>
@@ -976,6 +997,7 @@ input.r::-moz-range-thumb{
     </section>
   </div>
 
+  <div class="pick-err" id="fpick-err">No films match your current filters. Try widening the runtime, year, or language settings.</div>
   <div class="actions">
     <button class="btn-gold" id="fpick">Pick for me</button>
     <button class="btn-ghost" id="fbrowse">Browse list</button>
@@ -1013,6 +1035,7 @@ input.r::-moz-range-thumb{
     <input type="text" class="search" id="search" placeholder="Search title or year">
     <button class="btn-sp" id="lpick">Pick</button>
     <button class="btn-sg" id="lback">Back</button>
+    <button class="btn-sg" id="lsort" title="Sort order">A→Z</button>
   </div>
 
   <div class="film-list" id="flist" style="margin-top:10px"></div>
@@ -1033,6 +1056,7 @@ let cache={}
 let stopped=false
 let enrichDone=false
 let tmdbKey=''
+let listSort='alpha'
 
 const $=id=>document.getElementById(id)
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -1353,14 +1377,18 @@ function renderList(items){
 function showList(){
   const pool=getPool()
   const q=$('search').value.toLowerCase().trim()
-  const shown=q?pool.filter(m=>m.title.toLowerCase().includes(q)||(m.year&&m.year.includes(q))):pool
+  let shown=q?pool.filter(m=>m.title.toLowerCase().includes(q)||(m.year&&m.year.includes(q))):[...pool]
+  if(listSort==='alpha')shown.sort((a,b)=>a.title.localeCompare(b.title))
+  else shown.sort((a,b)=>(parseInt(b.year)||0)-(parseInt(a.year)||0))
   $('lct2').textContent=q?`${shown.length} of ${pool.length} films`:`${pool.length} films`
   renderList(shown)
 }
 
 function randPicks(n){
   const pool=getPool()
-  return [...pool].sort(()=>Math.random()-.5).slice(0,Math.min(n,pool.length))
+  const a=[...pool]
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  return a.slice(0,Math.min(n,pool.length))
 }
 
 function makeCardMarkup(film){
@@ -1405,9 +1433,12 @@ function doPick(picks){
     const card=document.createElement('div')
     card.className='pcard'+(film.uri?' has-link':'')
     card.innerHTML=makeCardMarkup(film)
+    const img=card.querySelector('.pcard-poster')
+    if(img){if(img.complete)img.classList.add('loaded');else img.onload=()=>img.classList.add('loaded')}
     wrap.appendChild(card)
     grid.appendChild(wrap)
   })
+  grid.querySelectorAll('.pcard').forEach((card,i)=>{card.style.animationDelay=`${i*80}ms`})
 }
 
 function loadFile(file){
@@ -1511,8 +1542,10 @@ document.querySelectorAll('#lang-row .lb').forEach(btn=>{
 })
 
 $('fpick').addEventListener('click',()=>{
+  $('fpick-err').style.display='none'
   const p=randPicks(amt)
-  if(p.length)doPick(p)
+  if(!p.length){$('fpick-err').style.display='block';return}
+  doPick(p)
 })
 $('fbrowse').addEventListener('click',()=>{
   showList()
@@ -1528,6 +1561,11 @@ $('lback').addEventListener('click',()=>{
   updateCount()
   show('vf')
 })
+$('lsort').addEventListener('click',()=>{
+  listSort=listSort==='alpha'?'year':'alpha'
+  $('lsort').textContent=listSort==='alpha'?'A→Z':'Year ↓'
+  showList()
+})
 $('pagain').addEventListener('click',()=>{
   const p=randPicks(amt)
   if(p.length)doPick(p)
@@ -1535,6 +1573,14 @@ $('pagain').addEventListener('click',()=>{
 $('pback').addEventListener('click',()=>{
   updateCount()
   show('vf')
+})
+
+document.addEventListener('keydown',e=>{
+  if(e.key===' '&&document.querySelector('#vp.active')&&!e.target.matches('input,textarea,button,select')){
+    e.preventDefault()
+    const p=randPicks(amt)
+    if(p.length)doPick(p)
+  }
 })
 </script>
 </body>
